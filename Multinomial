@@ -1,0 +1,97 @@
+# ==========================================================
+# Universidad de Guanajuato
+# Profesora: Lesly Flores
+# Tema: Modelos categóricos multinomiales
+# Ejemplo: Intención de voto en Chile (1988) 
+# Fuente: https://cran.r-project.org/web/packages/carData/carData.pdf
+# ==========================================================
+
+# (1) Instalar y cargar librerías
+# ----------------------------------------------------------
+# Dataset Chile: incluye intención de voto, edad, ingreso, educación, religión
+install.packages("carData")
+install.packages("nnet")
+install.packages("marginaleffects")
+install.packages("ggplot2")
+
+library(carData)
+library(nnet)
+library(marginaleffects)
+library(dplyr)
+library(ggplot2)
+
+library(tidyverse)
+library(readxl)
+library(ggcorrplot)
+
+datos <- read_excel("voto celaya.xlsx")
+
+glimpse(datos)
+
+# (2) Cargar base de datos
+# ----------------------------------------------------------
+data("celaya")
+head(datos)
+str(datos)
+
+# Variable dependiente: vote (5 categorías)
+table(datos$Voto)
+
+# (3) Ajustar modelo logit multinomial
+# ----------------------------------------------------------
+# Modelo: voto ~ edad + ingreso + statusquo
+# - statusquo mide la opinión sobre la situación económica bajo Pinochet
+# - Usamos "No" como categoría de referencia
+mod_celaya <- multinom(Voto ~ Edad + Sexo + Ocupacion + Escolaridad, data = datos, trace = FALSE)
+
+summary(mod_celaya)
+
+# (4) Coeficientes e interpretación
+# ----------------------------------------------------------
+# Exp(coef) = Odds ratios
+exp(coef(mod_celaya))
+
+# (5) Average Marginal Effects (AME)
+
+ame_Edad <- avg_slopes(mod_celaya, variables = "Edad", type = "probs")
+ame_Edad
+
+ame_Sexo <- avg_slopes(mod_celaya, variables = "Sexo", type = "probs")
+ame_Sexo
+
+ame_Escolaridad <- avg_slopes(mod_celaya, variables = "Escolaridad", type = "probs")
+ame_Escolaridad
+
+ame_Ocupacion <- avg_slopes(mod_celaya, variables = "Ocupacion", type = "probs")
+ame_Ocupacion
+# A (Abstain): -0.0014
+# Cada año extra de edad reduce en promedio 0.14 puntos porcentuales la probabilidad de abstenerse.
+
+# N (No): -0.0017
+# Cada año extra de edad reduce en 0.17 pp la probabilidad de votar No.
+
+# U (Undecided): +0.0026
+# Cada año extra de edad aumenta en 0.26 pp la probabilidad de estar indeciso.
+
+# Y (Yes): +0.0005
+# Cada año extra de edad aumenta en 0.05 pp la probabilidad de votar Sí.
+
+ame_statusquo <- avg_slopes(mod_chile, variables = "statusquo", type = "probs")
+ame_statusquo
+# A (Abstain): 0.00784
+#Cada año extra de statusquo aumenta en 0.784 puntos porcentuales la probabilidad de abstenerse.
+# N (No): -0.26891
+#Cada año extra de statusquo reduce en 26.89 puntos porcentuales la probabilidad de votar No.
+# U (Undecided): 0.02854
+#Cada año extra de statusquo aumenta en 2.85 puntos porcentuales la probabilidad de estar indeciso.
+# Y (Yes): 0.23253
+#Cada año extra de statusquo aumenta en 23.25 puntos porcentuales la probabilidad de votar Sí.
+
+ame_income <- avg_slopes(mod_chile, variables = "income", type = "probs")
+ame_income
+
+# ==========================================================
+# Preguntas
+# ==========================================================
+# 1. ¿En qué contexto político se situó este plebiscito y por qué es relevante para el análisis?
+# 2. ¿Por qué un modelo multinomial es más adecuado aquí que un logit binario?
